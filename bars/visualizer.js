@@ -12,7 +12,7 @@ function main(heart = false) {
       this.height = height;
       this.color = color;
       this.sound = 0;
-      this.maxSound = 170;
+      this.maxSound = 50;
       this.minInput = 0;
       this.maxInput = 0;
     }
@@ -29,7 +29,7 @@ function main(heart = false) {
     }
     draw(context) {
       context.fillStyle = this.color;
-      context.fillRect(this.x - (this.width + this.sound) / 2, this.y - this.height / 2, this.width + this.sound, this.height);
+      context.fillRect(this.x - this.width / 2, this.y - this.height / 2, this.width, this.height - this.sound);
     }
     drawHeart(ctx, color) {
       var x = 0;
@@ -59,21 +59,31 @@ function main(heart = false) {
       ctx.restore();
     }
   }
-  const microphone = new Microphone(32);
+  const fftSize = 256;
+  const fftSizeQuarter = fftSize/4;
+  const microphone = new Microphone(fftSize);
   const black_bar = new Bar(0, 0, 300, 150, 'black');
   const white_bar = new Bar(0, 0, 300, 50, 'white');
-  const bar = new Bar(0, 0, 130, 50, 'red');
+  const bars = [];
+  function createBars() {
+    for (let i = 0; i < fftSize; i++) {
+      bars.push( 
+        new Bar(i - fftSizeQuarter, 25, 1, 0, 'red'))
+    }
+  }
+  createBars();
   function animate() {
     if (microphone.initialized) {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.save();
       ctx.translate(canvas.width / 2, canvas.height / 2);
-      const volume = microphone.getVolume();
+      const samples = microphone.getSamples();
       black_bar.draw(ctx);
       white_bar.draw(ctx);
-      bar.update(volume);
-      if (heart) bar.drawHeart(ctx);
-      else bar.draw(ctx);
+      bars.forEach(function(bar, i) {
+        bar.update(samples[i]);
+        bar.draw(ctx);
+      });
       ctx.restore();
     }
     requestAnimationFrame(animate);
